@@ -5,40 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Спокойной ночи 🌙</title>
 
-<!--
-═══════════════════════════════════════════════════════════════════════
-  📁 СТРУКТУРА ФАЙЛОВ ДЛЯ ТВОИХ КАРТИНОК:
-  project/
-  ├── index.html
-  └── images/
-      ├── gallery-1.jpg   ← галерея, полароид №1
-      ├── gallery-2.jpg   ← галерея, полароид №2
-      ├── gallery-3.jpg   ← галерея, полароид №3
-      └── puzzle.jpg      ← картинка для головоломки (лучше квадратная)
-
-  Пока файлов нет — показываются милые SVG-заглушки, ничего не ломается.
-
-  ДЕКОМПОЗИЦИЯ:
-  1. ФОН          — canvas: мерцающие + падающие звёзды
-  2. ШАПКА        — кнопка «Выключить свет»
-  3. HERO         — луна, заголовок, эффект печати
-  4. ПОЖЕЛАНИЯ    — случайные карточки + летящие сердечки
-  5. ПЕРСОНАЖИ    — 5 друзей (SVG-портреты), клик по карточке →
-                    личное пожелание в облачке.
-                    Имена/фразы/цвета/причёски — в массиве CHARACTERS ↓
-                    hairLen: 'long' | 'shoulder' | 'short' | 'shortPlus'
-  6. ГАЛЕРЕЯ      — 3 полароида с ТВОИМИ images/gallery-*.jpg
-  7. ГОЛОВОЛОМКА  — пятнашки 3×3 из ТВОЕЙ images/puzzle.jpg
-  8. ПОДВАЛ       — спящий котик, «Загадать желание»
-
-  🚀 ДЕПЛОЙ НА RENDER.COM:
-  1. Запушь в GitHub index.html И папку images/.
-  2. render.com → New + → Static Site → выбери репозиторий.
-  3. Build command: (пусто)   Publish directory: ./
-  4. Create Static Site — готово!
-═══════════════════════════════════════════════════════════════════════
--->
-
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/comfortaa@5.0.20/400.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/comfortaa@5.0.20/700.css">
 
@@ -235,7 +201,7 @@ footer{text-align:center;padding:50px 20px 70px}
 <canvas id="sky"></canvas>
 
 <header>
-  <div class="logo">🌙 сонное.местечко</div>
+  <div class="logo">для.эли.с.любовью</div>
   <button class="btn ghost" id="lightBtn">💡 Выключить свет</button>
 </header>
 
@@ -636,7 +602,7 @@ CHARACTERS.forEach((c, i) => {
 });
 
 /* ════════ 9. ГАЛЕРЕЯ: ПОДКЛЮЧАЕМ МОИ КАРТИНКИ ════════ */
-const userCaptions = ['моё фото 🤍', 'моё фото 🤍', 'моё фото 🤍'];
+const userCaptions = ['Бизнес не за горами 🤍', 'Королевский поцелуй 🤍', 'Ботаник 🤍'];
 document.querySelectorAll('.polaroid').forEach((card, idx) => {
   const img = card.querySelector('img[data-src]');
   img.src = img.dataset.src;
