@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Спокойной ночи 🌙</title>
+
+<!--
+═══════════════════════════════════════════════════════════════════════
+  📁 СТРУКТУРА ФАЙЛОВ ДЛЯ ТВОИХ КАРТИНОК:
+  project/
+  ├── index.html
+  └── images/
+      ├── gallery-1.jpg   ← галерея, полароид №1
+      ├── gallery-2.jpg   ← галерея, полароид №2
+      ├── gallery-3.jpg   ← галерея, полароид №3
+      └── puzzle.jpg      ← картинка для головоломки (лучше квадратная)
+
+  Пока файлов нет — показываются милые SVG-заглушки, ничего не ломается.
+
+  ДЕКОМПОЗИЦИЯ:
+  1. ФОН          — canvas: мерцающие + падающие звёзды
+  2. ШАПКА        — кнопка «Выключить свет»
+  3. HERO         — луна, заголовок, эффект печати
+  4. ПОЖЕЛАНИЯ    — случайные карточки + летящие сердечки
+  5. ПЕРСОНАЖИ    — 5 друзей (SVG-портреты), клик по карточке →
+                    личное пожелание в облачке.
+                    Имена/фразы/цвета/причёски — в массиве CHARACTERS ↓
+                    hairLen: 'long' | 'shoulder' | 'short' | 'shortPlus'
+  6. ГАЛЕРЕЯ      — 3 полароида с ТВОИМИ images/gallery-*.jpg
+  7. ГОЛОВОЛОМКА  — пятнашки 3×3 из ТВОЕЙ images/puzzle.jpg
+  8. ПОДВАЛ       — спящий котик, «Загадать желание»
+
+  🚀 ДЕПЛОЙ НА RENDER.COM:
+  1. Запушь в GitHub index.html И папку images/.
+  2. render.com → New + → Static Site → выбери репозиторий.
+  3. Build command: (пусто)   Publish directory: ./
+  4. Create Static Site — готово!
+═══════════════════════════════════════════════════════════════════════
+-->
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/comfortaa@5.0.20/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/comfortaa@5.0.20/700.css">
+
+<style>
+:root{
+  --bg1:#0b1035; --bg2:#1a1145; --bg3:#2b1a4d;
+  --text:#f5f0ff; --soft:#c9bde8;
+  --moon:#ffd76e; --lav:#b39dff; --pink:#ff9ecb;
+  --card:rgba(255,255,255,.06); --border:rgba(255,255,255,.14);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Comfortaa',system-ui,sans-serif;
+  background:linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 55%,var(--bg3) 100%);
+  color:var(--text); min-height:100vh; overflow-x:hidden;
+}
+#sky{position:fixed;inset:0;z-index:0;pointer-events:none}
+main,header,footer{position:relative;z-index:1}
+
+body.lights-off main,
+body.lights-off header .logo{filter:brightness(.28) saturate(.6);transition:filter .8s}
+main,header .logo{transition:filter .8s}
+
+.wrap{max-width:920px;margin:0 auto;padding:0 20px}
+
+/* ── шапка ─────────────────────────────── */
+header{display:flex;justify-content:space-between;align-items:center;padding:22px 26px}
+.logo{font-weight:700;font-size:1.05rem;letter-spacing:.5px;color:var(--soft)}
+
+/* ── кнопки ────────────────────────────── */
+.btn{
+  font-family:inherit;font-size:.95rem;font-weight:700;color:#2a1c4f;
+  background:linear-gradient(135deg,var(--moon),#ffb85e);
+  border:none;border-radius:999px;padding:13px 26px;cursor:pointer;
+  box-shadow:0 6px 22px rgba(255,200,90,.35);
+  transition:transform .2s,box-shadow .2s;
+}
+.btn:hover{transform:translateY(-3px) scale(1.04);box-shadow:0 10px 30px rgba(255,200,90,.5)}
+.btn:active{transform:scale(.96)}
+.btn.ghost{
+  background:var(--card);color:var(--text);border:1px solid var(--border);
+  box-shadow:none;backdrop-filter:blur(6px);
+}
+.btn.ghost:hover{box-shadow:0 8px 24px rgba(179,157,255,.25);border-color:var(--lav)}
+.btn.pinky{background:linear-gradient(135deg,var(--pink),#ff7ab8);color:#4a1030;box-shadow:0 6px 22px rgba(255,126,190,.35)}
+
+/* ── hero ──────────────────────────────── */
+.hero{text-align:center;padding:40px 20px 70px}
+.moon-art{width:min(240px,55vw);height:auto;display:block;margin:0 auto;
+  filter:drop-shadow(0 0 34px rgba(255,215,110,.55));animation:float 5.5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-18px) rotate(2deg)}}
+h1{font-size:clamp(2rem,6vw,3.4rem);margin:26px 0 12px;font-weight:700;
+  background:linear-gradient(90deg,#ffe9a8,var(--moon),var(--pink),var(--lav));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  background-size:300% 100%;animation:shimmer 7s linear infinite}
+@keyframes shimmer{to{background-position:300% 0}}
+.typewriter{min-height:1.7em;color:var(--soft);font-size:clamp(.95rem,2.6vw,1.15rem);margin-bottom:30px}
+.typewriter::after{content:'▌';animation:blink 1s steps(1) infinite;color:var(--moon)}
+@keyframes blink{50%{opacity:0}}
+
+/* ── секции ────────────────────────────── */
+section{padding:60px 0}
+.sec-title{text-align:center;font-size:clamp(1.4rem,4vw,1.9rem);margin-bottom:10px;font-weight:700}
+.sec-sub{text-align:center;color:var(--soft);margin-bottom:36px;font-size:.95rem}
+
+.reveal{opacity:0;transform:translateY(36px);transition:opacity .8s ease,transform .8s ease}
+.reveal.visible{opacity:1;transform:none}
+
+/* ── пожелания ─────────────────────────── */
+.wish-card{
+  max-width:560px;margin:0 auto 30px;padding:34px 30px;text-align:center;
+  background:var(--card);border:1px solid var(--border);border-radius:26px;
+  backdrop-filter:blur(10px);font-size:clamp(1rem,3vw,1.2rem);line-height:1.7;
+  box-shadow:0 14px 40px rgba(0,0,0,.3);min-height:120px;
+  display:flex;align-items:center;justify-content:center;
+}
+.wish-card.pop{animation:pop .5s ease}
+@keyframes pop{0%{transform:scale(.92) rotate(-1deg);opacity:0}60%{transform:scale(1.03)}100%{transform:scale(1)}}
+.btn-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+/* ── персонажи ─────────────────────────── */
+.friends{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:22px}
+.friend{
+  background:var(--card);border:1px solid var(--border);border-radius:22px;
+  padding:16px 12px 16px;text-align:center;cursor:pointer;position:relative;
+  overflow:visible;
+  transition:transform .3s,box-shadow .3s,border-color .3s;
+}
+.friend:hover{transform:translateY(-7px);border-color:var(--lav);box-shadow:0 16px 40px rgba(120,90,255,.28)}
+.friend .avatar{
+  border-radius:16px;padding:4px;
+  background:radial-gradient(circle at 50% 35%,rgba(255,215,110,.14),transparent 70%);
+}
+.friend .avatar svg{width:100%;height:auto;display:block;border-radius:14px;
+  animation:bob 4.6s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.fname{font-weight:700;margin-top:10px;font-size:.95rem}
+.fhint{font-size:.72rem;color:var(--soft);opacity:.75;margin-top:3px}
+.bubble{
+  position:absolute;left:50%;bottom:calc(100% - 2px);
+  transform:translateX(-50%) scale(.55);transform-origin:bottom center;
+  background:#fffdf5;color:#3a2a5f;font-size:.78rem;font-weight:700;line-height:1.45;
+  padding:11px 14px;border-radius:14px;width:198px;z-index:10;
+  opacity:0;pointer-events:none;box-shadow:0 10px 25px rgba(0,0,0,.4);
+  transition:all .35s cubic-bezier(.2,.9,.3,1.4);
+}
+.bubble::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  border:9px solid transparent;border-top-color:#fffdf5}
+.friend.open .bubble{opacity:1;transform:translateX(-50%) scale(1);bottom:calc(100% + 6px)}
+.friend.open{border-color:var(--moon);box-shadow:0 14px 36px rgba(255,200,90,.22)}
+
+/* ── галерея (мои картинки) ────────────── */
+.gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:26px}
+.polaroid{
+  background:#fdf9f0;border-radius:10px;padding:14px 14px 46px;
+  box-shadow:0 16px 40px rgba(0,0,0,.4);position:relative;
+  transition:transform .35s,box-shadow .35s;
+}
+.polaroid:nth-child(1){transform:rotate(-3deg)}
+.polaroid:nth-child(2){transform:rotate(1.5deg)}
+.polaroid:nth-child(3){transform:rotate(-1.5deg)}
+.polaroid:hover{transform:rotate(0) scale(1.05);box-shadow:0 24px 55px rgba(0,0,0,.55);z-index:2}
+.polaroid .ph{aspect-ratio:1/1;border-radius:6px;overflow:hidden;background:#1b1150;display:block;position:relative}
+.polaroid .ph svg{width:100%;height:100%;display:block}
+.polaroid .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  opacity:0;transition:opacity .6s ease}
+.polaroid .ph img.loaded{opacity:1}
+.polaroid .cap{position:absolute;left:0;right:0;bottom:12px;text-align:center;
+  color:#5a4a7a;font-size:.85rem;font-weight:700}
+
+/* ── головоломка ───────────────────────── */
+.puzzle-box{display:flex;flex-direction:column;align-items:center;gap:20px}
+.puzzle{
+  --pz:min(84vw,330px);
+  width:var(--pz);height:var(--pz);position:relative;
+  border-radius:18px;overflow:hidden;
+  border:3px solid var(--border);
+  background:rgba(0,0,0,.3);
+  box-shadow:0 18px 50px rgba(0,0,0,.45);
+}
+.tile{
+  position:absolute;width:calc(100%/3);height:calc(100%/3);
+  transition:left .22s ease,top .22s ease;cursor:pointer;
+  background-size:300% 300%;background-repeat:no-repeat;
+}
+.tile span{position:absolute;right:6px;bottom:3px;font-size:.7rem;color:rgba(255,255,255,.75);
+  text-shadow:0 1px 3px rgba(0,0,0,.9)}
+.tile:hover{filter:brightness(1.15)}
+.pz-info{color:var(--soft);font-size:.95rem}
+.pz-win{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  flex-direction:column;gap:8px;text-align:center;padding:20px;
+  background:rgba(11,16,53,.82);backdrop-filter:blur(4px);z-index:5;
+  font-weight:700;font-size:1.15rem;border-radius:15px;
+}
+.pz-win.show{display:flex;animation:pop .5s ease}
+
+/* ── сердечки / конфетти ───────────────── */
+.fly{position:fixed;z-index:99;pointer-events:none;font-size:26px;animation:flyUp 2.4s ease-out forwards}
+@keyframes flyUp{
+  0%{opacity:1;transform:translate(0,0) scale(.6)}
+  100%{opacity:0;transform:translate(var(--dx),-260px) scale(1.4) rotate(var(--rot))}
+}
+.spark{position:fixed;z-index:99;pointer-events:none;font-size:20px;animation:sparkFly 1.4s ease-out forwards}
+@keyframes sparkFly{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.2)}}
+
+/* ── тост ──────────────────────────────── */
+#toast{
+  position:fixed;left:50%;bottom:34px;transform:translate(-50%,80px);
+  background:rgba(30,20,70,.92);border:1px solid var(--border);color:var(--text);
+  padding:14px 26px;border-radius:999px;font-size:.95rem;z-index:100;max-width:88vw;
+  opacity:0;transition:all .45s cubic-bezier(.2,.9,.3,1.3);backdrop-filter:blur(8px);
+  box-shadow:0 10px 30px rgba(0,0,0,.4);text-align:center;
+}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ── подвал ────────────────────────────── */
+footer{text-align:center;padding:50px 20px 70px}
+.cat-art{width:min(280px,70vw);margin:0 auto 8px;display:block;animation:breathe 4s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+.zzz{font-size:1.4rem;color:var(--lav);animation:zzz 3.2s ease-in-out infinite;display:inline-block}
+@keyframes zzz{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-12px);opacity:1}}
+.foot-note{color:var(--soft);margin:14px 0 22px;font-size:.95rem;line-height:1.7}
+
+@media (max-width:520px){
+  .btn{padding:12px 20px;font-size:.88rem}
+  header{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<canvas id="sky"></canvas>
+
+<header>
+  <div class="logo">🌙 сонное.местечко</div>
+  <button class="btn ghost" id="lightBtn">💡 Выключить свет</button>
+</header>
+
+<main>
+  <!-- ═══ HERO ═══ -->
+  <div class="hero">
+    <svg class="moon-art" viewBox="0 0 220 240" aria-label="Сонная луна">
+      <defs>
+        <radialGradient id="moonG" cx="0.4" cy="0.35" r="0.85">
+          <stop offset="0" stop-color="#fff6cf"/><stop offset="1" stop-color="#ffc94d"/>
+        </radialGradient>
+      </defs>
+      <circle cx="110" cy="125" r="82" fill="url(#moonG)"/>
+      <circle cx="70" cy="90" r="14" fill="#f5b83f" opacity=".35"/>
+      <circle cx="150" cy="160" r="18" fill="#f5b83f" opacity=".3"/>
+      <circle cx="120" cy="70" r="9" fill="#f5b83f" opacity=".3"/>
+      <path d="M62 62 Q95 -2 165 22 Q120 30 96 74 Z" fill="#8f74e8"/>
+      <path d="M62 62 Q95 -2 165 22 Q120 30 96 74 Z" fill="none" stroke="#6f52cc" stroke-width="3"/>
+      <circle cx="168" cy="22" r="12" fill="#ffd76e"/>
+      <path d="M74 118 q10 11 20 0" stroke="#8a5f14" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M126 118 q10 11 20 0" stroke="#8a5f14" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <circle cx="66" cy="142" r="11" fill="#ff9ecb" opacity=".65"/>
+      <circle cx="154" cy="142" r="11" fill="#ff9ecb" opacity=".65"/>
+      <path d="M98 150 q12 12 24 0" stroke="#8a5f14" stroke-width="5" fill="none" stroke-linecap="round"/>
+    </svg>
+
+    <h1>Спокойной ночи</h1>
+    <div class="typewriter" id="tw"></div>
+    <button class="btn" id="magicBtn">✨ Волшебное пожелание</button>
+  </div>
+
+  <!-- ═══ ПОЖЕЛАНИЯ ═══ -->
+  <section id="wishes">
+    <div class="wrap reveal">
+      <h2 class="sec-title">Тёплые слова для тебя</h2>
+      <p class="sec-sub">нажимай на кнопку — вселенная подберёт пожелание 💜</p>
+      <div class="wish-card" id="wishCard">Нажми «Ещё пожелание», и здесь появится что-то уютное… 🌟</div>
+      <div class="btn-row">
+        <button class="btn" id="wishBtn">💫 Ещё пожелание</button>
+        <button class="btn pinky" id="hugBtn">💌 Отправить обнимашки</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ ПЕРСОНАЖИ ═══ -->
+  <section id="friends">
+    <div class="wrap reveal">
+      <h2 class="sec-title">Друзья желают тебе спокойной ночи</h2>
+      <p class="sec-sub">нажми на любого — у каждого своё личное пожелание 💬</p>
+      <div class="friends" id="friendsGrid"></div>
+    </div>
+  </section>
+
+  <!-- ═══ ГАЛЕРЕЯ ИЗ МОИХ КАРТИНОК ═══ -->
+  <section id="gallery">
+    <div class="wrap reveal">
+      <h2 class="sec-title">Уютная галерея</h2>
+      <p class="sec-sub">положи свои файлы в папку images/ — они появятся здесь сами 📷</p>
+      <div class="gallery">
+
+        <!-- МОЯ КАРТИНКА №1: images/gallery-1.jpg -->
+        <figure class="polaroid">
+          <div class="ph">
+            <svg viewBox="0 0 200 200"><rect width="200" height="200" fill="#1b1150"/><circle cx="150" cy="50" r="26" fill="#ffd76e"/><circle cx="140" cy="44" r="22" fill="#1b1150"/><circle cx="40" cy="35" r="2" fill="#fff"/><circle cx="80" cy="70" r="2.5" fill="#fff" opacity=".8"/><circle cx="120" cy="110" r="2" fill="#fff" opacity=".7"/><circle cx="60" cy="130" r="2" fill="#fff" opacity=".9"/><circle cx="170" cy="120" r="2" fill="#fff" opacity=".6"/><path d="M0 165 Q50 135 100 162 T200 158 L200 200 L0 200 Z" fill="#241a52"/><text x="100" y="112" text-anchor="middle" font-size="11" fill="#8f7fd4" font-family="monospace">images/gallery-1.jpg</text></svg>
+            <img data-src="images/gallery-1.jpg" alt="Моё уютное фото №1">
+          </div>
+          <figcaption class="cap" data-caption>ночная луна 🌙</figcaption>
+        </figure>
+
+        <!-- МОЯ КАРТИНКА №2: images/gallery-2.jpg -->
+        <figure class="polaroid">
+          <div class="ph">
+            <svg viewBox="0 0 200 200"><rect width="200" height="200" fill="#251658"/><ellipse cx="100" cy="150" rx="85" ry="26" fill="#f2ecff" opacity=".9"/><ellipse cx="60" cy="138" rx="42" ry="20" fill="#f2ecff" opacity=".9"/><ellipse cx="140" cy="140" rx="38" ry="18" fill="#f2ecff" opacity=".9"/><ellipse cx="105" cy="128" rx="42" ry="22" fill="#9d86e8"/><circle cx="140" cy="112" r="20" fill="#9d86e8"/><path d="M127 100 L129 86 L140 96 Z" fill="#9d86e8"/><path d="M152 100 L154 86 L143 95 Z" fill="#9d86e8"/><path d="M132 113 q4 4 8 0" stroke="#3a2a6e" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M145 113 q4 4 8 0" stroke="#3a2a6e" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M66 130 q-22 -6 -20 12" stroke="#9d86e8" stroke-width="8" fill="none" stroke-linecap="round"/><text x="160" y="80" font-size="16" fill="#c9bde8" font-family="monospace">z</text><text x="172" y="64" font-size="12" fill="#c9bde8" font-family="monospace">z</text><text x="100" y="185" text-anchor="middle" font-size="11" fill="#6f5bb0" font-family="monospace">images/gallery-2.jpg</text></svg>
+            <img data-src="images/gallery-2.jpg" alt="Моё уютное фото №2">
+          </div>
+          <figcaption class="cap" data-caption>сонный котик 🐱</figcaption>
+        </figure>
+
+        <!-- МОЯ КАРТИНКА №3: images/gallery-3.jpg -->
+        <figure class="polaroid">
+          <div class="ph">
+            <svg viewBox="0 0 200 200"><rect width="200" height="200" fill="#170f42"/><circle cx="40" cy="40" r="2" fill="#fff"/><circle cx="90" cy="25" r="2" fill="#fff" opacity=".8"/><circle cx="160" cy="50" r="2.5" fill="#fff" opacity=".7"/><circle cx="130" cy="20" r="1.8" fill="#fff"/><path d="M0 130 Q60 95 120 128 T200 120 L200 200 L0 200 Z" fill="#221852"/><rect x="70" y="118" width="56" height="48" rx="4" fill="#4a3580"/><path d="M62 122 L98 88 L134 122 Z" fill="#6c4fa0"/><rect x="88" y="132" width="20" height="18" rx="3" fill="#ffd76e"/><line x1="98" y1="132" x2="98" y2="150" stroke="#3a2a6e" stroke-width="2"/><text x="100" y="60" text-anchor="middle" font-size="11" fill="#8f7fd4" font-family="monospace">images/gallery-3.jpg</text></svg>
+            <img data-src="images/gallery-3.jpg" alt="Моё уютное фото №3">
+          </div>
+          <figcaption class="cap" data-caption>домик мечты 🏡</figcaption>
+        </figure>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ ГОЛОВОЛОМКА ИЗ МОЕЙ КАРТИНКИ ═══ -->
+  <section id="puzzle">
+    <div class="wrap reveal">
+      <h2 class="sec-title">Головоломка «Собери картинку»</h2>
+      <p class="sec-sub">твоя images/puzzle.jpg, нарезанная на 9 кусочков — передвигай их кликом 🧩</p>
+      <div class="puzzle-box">
+        <div class="puzzle" id="puzzleBoard">
+          <div class="pz-win" id="pzWin">🎉 Ура! Картинка собрана!<br>Теперь можно и вздремнуть 💛</div>
+        </div>
+        <div class="pz-info">Ходов: <b id="moveCount">0</b> · <span id="pzSource">загрузка…</span></div>
+        <div class="btn-row">
+          <button class="btn ghost" id="shuffleBtn">🔀 Перемешать</button>
+          <button class="btn" id="newBtn">🔄 Новая игра</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ═══ ПОДВАЛ ═══ -->
+<footer class="reveal">
+  <svg class="cat-art" viewBox="0 0 320 200" aria-label="Спящий котик">
+    <ellipse cx="160" cy="160" rx="140" ry="30" fill="#f2ecff" opacity=".92"/>
+    <ellipse cx="95" cy="145" rx="62" ry="26" fill="#f2ecff" opacity=".92"/>
+    <ellipse cx="230" cy="148" rx="55" ry="24" fill="#f2ecff" opacity=".92"/>
+    <ellipse cx="170" cy="122" rx="66" ry="34" fill="#a98ff0"/>
+    <circle cx="228" cy="100" r="30" fill="#a98ff0"/>
+    <path d="M207 82 L210 60 L228 76 Z" fill="#a98ff0"/><path d="M248 82 L250 60 L232 76 Z" fill="#a98ff0"/>
+    <path d="M211 84 L213 70 L225 79 Z" fill="#ffc2dd"/><path d="M246 84 L247 70 L235 79 Z" fill="#ffc2dd"/>
+    <path d="M214 102 q6 6 12 0" stroke="#3a2a6e" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M234 102 q6 6 12 0" stroke="#3a2a6e" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <path d="M227 112 q-3 4 0 6 q3 -2 0 -6" fill="#ff9ecb"/>
+    <circle cx="205" cy="112" r="7" fill="#ff9ecb" opacity=".55"/>
+    <circle cx="252" cy="112" r="7" fill="#ff9ecb" opacity=".55"/>
+    <path d="M108 128 q-40 -8 -34 18" stroke="#a98ff0" stroke-width="12" fill="none" stroke-linecap="round"/>
+    <path d="M118 118 q14 -8 26 0" stroke="#8f74e8" stroke-width="4" fill="none" stroke-linecap="round" opacity=".6"/>
+    <path d="M150 114 q14 -8 26 0" stroke="#8f74e8" stroke-width="4" fill="none" stroke-linecap="round" opacity=".6"/>
+    <text x="266" y="66" font-size="26" fill="#c9bde8" font-weight="bold" font-family="monospace">z</text>
+    <text x="288" y="44" font-size="19" fill="#c9bde8" font-family="monospace">z</text>
+    <text x="304" y="28" font-size="13" fill="#c9bde8" font-family="monospace">z</text>
+  </svg>
+  <span class="zzz">💤</span>
+  <p class="foot-note">Сладких снов и пушистых облаков.<br>Пусть приснится что-то очень доброе 🤍</p>
+  <button class="btn ghost" id="starBtn">⭐ Загадать желание</button>
+</footer>
+
+<div id="toast"></div>
+
+<script>
+/* ════════ 1. ЗВЁЗДНОЕ НЕБО (canvas) ════════ */
+const cvs = document.getElementById('sky');
+const ctx = cvs.getContext('2d');
+let stars = [], shooters = [], W, H;
+
+function resize(){
+  W = cvs.width = innerWidth;
+  H = cvs.height = innerHeight;
+  stars = Array.from({length: Math.min(180, Math.floor(W*H/9000))}, () => ({
+    x: Math.random()*W, y: Math.random()*H,
+    r: Math.random()*1.6 + .4,
+    base: Math.random()*.5 + .3,
+    amp: Math.random()*.35 + .1,
+    sp: Math.random()*1.5 + .5,
+    ph: Math.random()*Math.PI*2
+  }));
+}
+addEventListener('resize', resize); resize();
+
+function spawnShooter(){
+  const fromLeft = Math.random() > .5;
+  shooters.push({
+    x: fromLeft ? -40 : W+40,
+    y: Math.random()*H*.45,
+    vx: (fromLeft ? 1 : -1) * (7 + Math.random()*4),
+    vy: 3 + Math.random()*2,
+    life: 1
+  });
+}
+setInterval(() => { if(Math.random() < .55) spawnShooter(); }, 3500);
+
+let t = 0;
+function drawSky(){
+  t += 0.016;
+  ctx.clearRect(0,0,W,H);
+  for(const s of stars){
+    const a = s.base + Math.sin(t*s.sp + s.ph)*s.amp;
+    ctx.globalAlpha = Math.max(0, Math.min(1, a));
+    ctx.fillStyle = '#fff8e7';
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  shooters = shooters.filter(sh => sh.life > 0 && sh.x > -100 && sh.x < W+100 && sh.y < H+50);
+  for(const sh of shooters){
+    sh.x += sh.vx; sh.y += sh.vy; sh.life -= .008;
+    const g = ctx.createLinearGradient(sh.x, sh.y, sh.x - sh.vx*8, sh.y - sh.vy*8);
+    g.addColorStop(0, `rgba(255,255,255,${sh.life})`);
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.strokeStyle = g; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(sh.x, sh.y); ctx.lineTo(sh.x - sh.vx*8, sh.y - sh.vy*8); ctx.stroke();
+    ctx.fillStyle = `rgba(255,240,200,${sh.life})`;
+    ctx.beginPath(); ctx.arc(sh.x, sh.y, 2, 0, 7); ctx.fill();
+  }
+  requestAnimationFrame(drawSky);
+}
+drawSky();
+
+/* ════════ 2. ЭФФЕКТ ПЕЧАТИ ════════ */
+const twEl = document.getElementById('tw');
+const twText = 'Тихой ночи… Пусть тебе приснятся самые добрые и волшебные сны ';
+let twI = 0;
+(function type(){
+  twEl.textContent = twText.slice(0, twI);
+  twI = (twI + 1) % (twText.length + 1);
+  setTimeout(type, twI === 0 ? 2500 : 55);
+})();
+
+/* ════════ 3. ПОЖЕЛАНИЯ ════════ */
+const wishes = [
+  'Пусть одеяло будет тёплым, а подушка — мягкой, как облако ☁️',
+  'Желаю тебе снов, в которых ты летаешь среди звёзд ⭐',
+  'Пусть все тревоги дня растворятся, как сахар в тёплом молоке 🥛',
+  'Спи сладко, а я попрошу луну посторожить твой сон 🌙',
+  'Пусть тебе приснится самое уютное место во вселенной 🏡',
+  'Звёзды уже зажглись — значит, самое время обнимать подушку 💫',
+  'Пусть утро встретит тебя добром и чашкой чего-то вкусного ☕',
+  'Ты сегодня молодец. Отдыхай — ты это заслужил(а) 💜',
+  'Пусть приснится море тёплых огоньков и ни одного будильника 🌊',
+  'Обнимаю тебя через весь интернет. Спокойной ночи 🤗'
+];
+const wishCard = document.getElementById('wishCard');
+let lastWish = -1;
+function showWish(){
+  let i; do { i = Math.floor(Math.random()*wishes.length); } while(i === lastWish);
+  lastWish = i;
+  wishCard.textContent = '🌟 ' + wishes[i];
+  wishCard.classList.remove('pop'); void wishCard.offsetWidth; wishCard.classList.add('pop');
+}
+document.getElementById('wishBtn').addEventListener('click', showWish);
+document.getElementById('magicBtn').addEventListener('click', () => {
+  showWish();
+  document.getElementById('wishes').scrollIntoView({behavior:'smooth'});
+  toast('Вселенная шепнула тебе кое-что тёплое ✨');
+});
+
+/* ════════ 4. ОБНИМАШКИ (сердечки) ════════ */
+document.getElementById('hugBtn').addEventListener('click', e => {
+  const r = e.currentTarget.getBoundingClientRect();
+  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  for(let k = 0; k < 14; k++){
+    const h = document.createElement('div');
+    h.className = 'fly';
+    h.textContent = ['💖','💜','💛','🌟','🤍'][k % 5];
+    h.style.left = cx + 'px'; h.style.top = cy + 'px';
+    h.style.setProperty('--dx', (Math.random()*260 - 130) + 'px');
+    h.style.setProperty('--rot', (Math.random()*90 - 45) + 'deg');
+    h.style.animationDelay = (Math.random()*.35) + 's';
+    document.body.appendChild(h);
+    setTimeout(() => h.remove(), 3000);
+  }
+  toast('Обнимашки доставлены! 🤗💌');
+});
+
+/* ════════ 5. СВЕТ ════════ */
+const lightBtn = document.getElementById('lightBtn');
+lightBtn.addEventListener('click', () => {
+  const off = document.body.classList.toggle('lights-off');
+  lightBtn.textContent = off ? '🌙 Включить свет' : '💡 Выключить свет';
+  toast(off ? 'Тшш… звёзды остались с тобой 🌌' : 'Свет снова мягко включён 💡');
+});
+
+/* ════════ 6. ЗАГАДАТЬ ЖЕЛАНИЕ ════════ */
+document.getElementById('starBtn').addEventListener('click', () => {
+  spawnShooter(); setTimeout(spawnShooter, 400); setTimeout(spawnShooter, 900);
+  toast('Звёзды услышали! Желание загадано ⭐🤫');
+});
+
+/* ════════ 7. ТОСТ ════════ */
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* ════════ 8. ПЕРСОНАЖИ (5 друзей) ════════
+   Имена, фразы, цвета и причёски меняются здесь ↓
+   hairLen: 'long' — длинные | 'shoulder' — по плечи |
+            'short' — короткие | 'shortPlus' — чуть длиннее коротких   */
+const CHARACTERS = [
+  { name:'Мия',    msg:'Спи крепко, а я посторожу твои сны 💙',
+    hairLen:'long',  lashes:true,  skin:'#ffe0cf', skinShadow:'#f0c6b0',
+    hair:'#1c1a26', hairDark:'#12101a', hairStroke:'#6f6a8f',
+    eye:'#4aa8ff', dress:'#23212e', dressDark:'#151320', collar:'none' },
+  { name:'Ноэль',  msg:'Пусть ночь будет тихой, как первый снег 🤍',
+    hairLen:'short', skin:'#ffe6d8', skinShadow:'#f2ccb6',
+    hair:'#f4f6fb', hairDark:'#dde3f0', hairStroke:'#aab4cf',
+    eye:'#e8a13c', dress:'#17151f', dressDark:'#0e0d14', collar:'turtle', collarColor:'#17151f' },
+  { name:'Роза',   msg:'Тёплых тебе снов! Крепко обнимаю 🧡',
+    hairLen:'shoulder', lashes:true, skin:'#ffe3d2', skinShadow:'#f2c9b2',
+    hair:'#d94f2b', hairDark:'#b23d20',
+    eye:'#e8a13c', dress:'#f7f3ea', dressDark:'#ded7c8', collar:'straps' },
+  { name:'Мята',   msg:'Сладких снов, как летний луг 💚',
+    hairLen:'shoulder', lashes:true, skin:'#ffe8dc', skinShadow:'#f2cfba',
+    hair:'#58c98a', hairDark:'#3fae70',
+    eye:'#3fbf6a', dress:'#2fae63', dressDark:'#22904f', collar:'none' },
+  { name:'Оливер', msg:'Я посчитал все звёзды — каждая желает тебе добра ⭐',
+    hairLen:'shortPlus', glasses:true, skin:'#ffe1cd', skinShadow:'#f0c5ab',
+    hair:'#7a4a2b', hairDark:'#5f3a21',
+    eye:'#8a5a33', dress:'#f2f2f7', dressDark:'#d8d8e2', collar:'shirt' },
+];
+
+function charSVG(c){
+  const hs = c.hairStroke ? `stroke="${c.hairStroke}" stroke-width="2"` : '';
+
+  /* ── задние пряди (рисуются ПОВЕРХ платья, чтобы волосы
+        лежали на плечах, а голова соединялась с телом шеей) ── */
+  let hairBack = '';
+  if(c.hairLen === 'long'){
+    hairBack = `<path d="M52 92 Q50 32 100 26 Q150 32 148 92 L152 178 Q136 190 127 174 L122 105 L78 105 L73 174 Q64 190 48 178 Z" fill="${c.hairDark}" ${hs}/>`;
+  } else if(c.hairLen === 'shoulder'){
+    hairBack = `<path d="M52 92 Q50 32 100 26 Q150 32 148 92 L151 156 Q140 168 129 154 L122 102 L78 102 L71 154 Q60 168 49 156 Z" fill="${c.hairDark}" ${hs}/>`;
+  } else if(c.hairLen === 'shortPlus'){
+    hairBack = `<path d="M57 90 Q55 32 100 26 Q145 32 143 90 L143 110 Q137 116 132 108 L130 90 L70 90 L68 108 Q63 116 57 110 Z" fill="${c.hairDark}" ${hs}/>`;
+  }
+
+  /* ── чёлки ── */
+  let bangs = '';
+  if(c.hairLen === 'long' || c.hairLen === 'shoulder'){
+    bangs = `<path d="M60 80 Q56 32 100 27 Q144 32 140 80 Q130 56 108 54 Q114 64 108 72 Q96 54 70 64 Q63 68 60 80 Z" fill="${c.hair}" ${hs}/>`;
+  } else if(c.hairLen === 'short'){
+    bangs = `<path d="M58 82 Q54 30 100 25 Q146 30 142 82 Q136 60 126 54 L128 66 Q112 50 96 56 L100 46 Q74 48 66 62 L70 56 Q60 66 58 82 Z" fill="${c.hair}" ${hs}/>`;
+  } else { /* shortPlus — чуть длиннее и мягче */
+    bangs = `<path d="M57 90 Q53 30 100 25 Q147 30 143 90 Q134 62 120 57 L124 74 Q106 53 90 62 L95 48 Q70 54 63 72 L67 62 Q59 74 57 90 Z" fill="${c.hair}" ${hs}/>`;
+  }
+
+  /* ── воротники / neckline ── */
+  let collar = '';
+  if(c.collar === 'turtle'){
+    collar = `<rect x="84" y="112" width="32" height="44" rx="12" fill="${c.collarColor || '#15151f'}"/>`;
+  } else if(c.collar === 'shirt'){
+    collar = `<path d="M87 142 L100 166 L74 159 Z" fill="${c.dress}" stroke="${c.dressDark}" stroke-width="2"/>`
+           + `<path d="M113 142 L100 166 L126 159 Z" fill="${c.dress}" stroke="${c.dressDark}" stroke-width="2"/>`
+           + `<circle cx="100" cy="178" r="3" fill="${c.dressDark}"/><circle cx="100" cy="198" r="3" fill="${c.dressDark}"/>`;
+  } else if(c.collar === 'straps'){
+    collar = `<ellipse cx="100" cy="160" rx="26" ry="13" fill="${c.skin}"/>`
+           + `<rect x="73" y="150" width="9" height="26" rx="4" fill="${c.dress}" transform="rotate(14 77 162)"/>`
+           + `<rect x="118" y="150" width="9" height="26" rx="4" fill="${c.dress}" transform="rotate(-14 123 162)"/>`;
+  } else {
+    collar = `<path d="M82 156 Q100 172 118 156" stroke="${c.dressDark}" stroke-width="3" fill="none" stroke-linecap="round" opacity=".85"/>`;
+  }
+
+  const eyeUnit = cx => `<ellipse cx="${cx}" cy="94" rx="7.5" ry="10" fill="${c.eye}"/><circle cx="${cx}" cy="96" r="3.5" fill="#241a3a"/><circle cx="${cx-2.5}" cy="90.5" r="2.4" fill="#fff"/><circle cx="${cx+2.5}" cy="98.5" r="1.2" fill="#fff" opacity=".8"/>`;
+  const lid = `<path d="M74.5 87 Q82 81.5 89.5 87" stroke="#42304f" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M110.5 87 Q118 81.5 125.5 87" stroke="#42304f" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  const lashes = c.lashes
+    ? `<path d="M73.5 88 l-5 -4" stroke="#42304f" stroke-width="2.5" stroke-linecap="round"/><path d="M126.5 88 l5 -4" stroke="#42304f" stroke-width="2.5" stroke-linecap="round"/>`
+    : '';
+  const glasses = c.glasses
+    ? `<circle cx="82" cy="94" r="14" fill="none" stroke="#5a4632" stroke-width="3"/><circle cx="118" cy="94" r="14" fill="none" stroke="#5a4632" stroke-width="3"/><line x1="96" y1="92" x2="104" y2="92" stroke="#5a4632" stroke-width="3"/><line x1="68" y1="90" x2="58" y2="85" stroke="#5a4632" stroke-width="3"/><line x1="132" y1="90" x2="142" y2="85" stroke="#5a4632" stroke-width="3"/>`
+    : '';
+
+  /* порядок: уши → шея (длинная, заходит под платье) → платье → воротник
+     → задние пряди поверх платья → голова → лицо → чёлка → очки  */
+  return `<svg viewBox="0 0 200 220" aria-label="${c.name}">
+    <circle cx="100" cy="95" r="88" fill="rgba(255,255,255,.05)"/>
+    <circle cx="34" cy="42" r="2.5" fill="#ffd76e"/><circle cx="168" cy="58" r="2" fill="#fff" opacity=".85"/><circle cx="156" cy="26" r="2.5" fill="#b39dff"/><circle cx="46" cy="150" r="2" fill="#fff" opacity=".7"/>
+    <circle cx="61" cy="92" r="7.5" fill="${c.skinShadow}"/><circle cx="139" cy="92" r="7.5" fill="${c.skinShadow}"/>
+    <rect x="88" y="104" width="24" height="66" rx="11" fill="${c.skinShadow}"/>
+    <path d="M36 222 Q38 162 100 150 Q162 162 164 222 Z" fill="${c.dress}"/>
+    <path d="M36 222 Q38 162 100 150 Q162 162 164 222 Z" fill="none" stroke="${c.dressDark}" stroke-width="2"/>
+    ${collar}
+    ${hairBack}
+    <ellipse cx="100" cy="86" rx="40" ry="43" fill="${c.skin}"/>
+    <ellipse cx="70" cy="106" rx="7" ry="4.5" fill="#ff9ecb" opacity=".5"/><ellipse cx="130" cy="106" rx="7" ry="4.5" fill="#ff9ecb" opacity=".5"/>
+    ${eyeUnit(82)}${eyeUnit(118)}${lid}${lashes}
+    <path d="M94 111 Q100 117 106 111" stroke="#b05a72" stroke-width="3" fill="none" stroke-linecap="round"/>
+    ${bangs}
+    ${glasses}
+  </svg>`;
+}
+
+const friendsGrid = document.getElementById('friendsGrid');
+CHARACTERS.forEach((c, i) => {
+  const card = document.createElement('div');
+  card.className = 'friend';
+  card.style.setProperty('--d', (i * 0.35) + 's');
+  card.innerHTML =
+    `<div class="bubble">${c.msg}</div>
+     <div class="avatar">${charSVG(c)}</div>
+     <div class="fname">${c.name}</div>
+     <div class="fhint">нажми 💤</div>`;
+  card.addEventListener('click', () => {
+    const wasOpen = card.classList.contains('open');
+    document.querySelectorAll('.friend.open').forEach(f => f.classList.remove('open'));
+    if(!wasOpen){
+      card.classList.add('open');
+      toast(`${c.name} желает тебе сладких снов 🌙`);
+    }
+  });
+  friendsGrid.appendChild(card);
+});
+
+/* ════════ 9. ГАЛЕРЕЯ: ПОДКЛЮЧАЕМ МОИ КАРТИНКИ ════════ */
+const userCaptions = ['моё фото 🤍', 'моё фото 🤍', 'моё фото 🤍'];
+document.querySelectorAll('.polaroid').forEach((card, idx) => {
+  const img = card.querySelector('img[data-src]');
+  img.src = img.dataset.src;
+  img.addEventListener('load', () => {
+    img.classList.add('loaded');
+    card.querySelector('[data-caption]').textContent = userCaptions[idx];
+  });
+  img.addEventListener('error', () => { img.style.display = 'none'; });
+});
+
+/* ════════ 10. ГОЛОВОЛОМКА ИЗ МОЕЙ КАРТИНКИ (пятнашки 3×3) ════════ */
+const USER_PUZZLE_SRC = 'images/puzzle.jpg';
+
+const fallbackSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'>
+<defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#1b1150'/><stop offset='1' stop-color='#3a2070'/></linearGradient>
+<radialGradient id='m' cx='0.4' cy='0.35' r='0.85'><stop offset='0' stop-color='#fff6cf'/><stop offset='1' stop-color='#ffc94d'/></radialGradient></defs>
+<rect width='300' height='300' fill='url(#g)'/>
+<circle cx='40' cy='40' r='2.5' fill='#fff'/><circle cx='260' cy='60' r='2' fill='#fff' opacity='.8'/>
+<circle cx='70' cy='90' r='1.8' fill='#fff' opacity='.7'/><circle cx='230' cy='150' r='2.2' fill='#fff' opacity='.6'/>
+<circle cx='30' cy='170' r='2' fill='#fff' opacity='.8'/><circle cx='280' cy='200' r='1.8' fill='#fff' opacity='.7'/>
+<circle cx='120' cy='30' r='1.6' fill='#fff' opacity='.6'/><circle cx='190' cy='25' r='2' fill='#fff' opacity='.9'/>
+<circle cx='150' cy='105' r='58' fill='url(#m)'/>
+<circle cx='122' cy='80' r='10' fill='#f5b83f' opacity='.35'/><circle cx='178' cy='130' r='13' fill='#f5b83f' opacity='.3'/>
+<path d='M124 100 q8 9 16 0' stroke='#8a5f14' stroke-width='4.5' fill='none' stroke-linecap='round'/>
+<path d='M160 100 q8 9 16 0' stroke='#8a5f14' stroke-width='4.5' fill='none' stroke-linecap='round'/>
+<circle cx='116' cy='118' r='8' fill='#ff9ecb' opacity='.6'/><circle cx='184' cy='118' r='8' fill='#ff9ecb' opacity='.6'/>
+<path d='M140 126 q10 10 20 0' stroke='#8a5f14' stroke-width='4.5' fill='none' stroke-linecap='round'/>
+<path d='M0 240 Q75 195 150 238 T300 232 L300 300 L0 300 Z' fill='#241a52'/>
+<path d='M0 268 Q100 235 200 266 T300 262 L300 300 L0 300 Z' fill='#1a1240'/>
+<rect x='48' y='228' width='52' height='44' rx='4' fill='#4a3580'/>
+<path d='M40 232 L74 202 L108 232 Z' fill='#6c4fa0'/>
+<rect x='64' y='242' width='20' height='18' rx='3' fill='#ffd76e'/>
+<line x1='74' y1='242' x2='74' y2='260' stroke='#3a2a6e' stroke-width='2'/>
+<ellipse cx='60' cy='60' rx='34' ry='12' fill='#fff' opacity='.1'/><ellipse cx='85' cy='52' rx='26' ry='11' fill='#fff' opacity='.1'/>
+</svg>`;
+const FALLBACK_URL = `url("data:image/svg+xml,${encodeURIComponent(fallbackSvg)}")`;
+
+const board = document.getElementById('puzzleBoard');
+const winEl = document.getElementById('pzWin');
+const moveEl = document.getElementById('moveCount');
+const srcEl = document.getElementById('pzSource');
+let tiles = [], moves = 0, won = false;
+const tileEls = {};
+
+function buildBoard(){
+  board.querySelectorAll('.tile').forEach(el => el.remove());
+  for(let v = 1; v <= 8; v++){
+    const d = document.createElement('div');
+    d.className = 'tile';
+    d.dataset.v = v;
+    const cIdx = (v-1) % 3, row = Math.floor((v-1) / 3);
+    d.style.backgroundPosition = `${cIdx*50}% ${row*50}%`;
+    const s = document.createElement('span'); s.textContent = v;
+    d.appendChild(s);
+    d.addEventListener('click', () => tryMove(v));
+    board.appendChild(d);
+    tileEls[v] = d;
+  }
+}
+function setPuzzleImage(url, label){
+  document.querySelectorAll('.tile').forEach(tl => tl.style.backgroundImage = url);
+  srcEl.textContent = label;
+}
+(function loadMyPuzzle(){
+  const probe = new Image();
+  probe.onload  = () => setPuzzleImage(`url('${USER_PUZZLE_SRC}')`, 'моя картинка 📷');
+  probe.onerror = () => setPuzzleImage(FALLBACK_URL, 'демо-луна (добавь images/puzzle.jpg)');
+  probe.src = USER_PUZZLE_SRC;
+})();
+
+function placeTiles(){
+  tiles.forEach((v, pos) => {
+    if(!v) return;
+    const el = tileEls[v];
+    el.style.left = (pos % 3) * (100/3) + '%';
+    el.style.top  = Math.floor(pos/3) * (100/3) + '%';
+  });
+}
+function isSolved(){
+  return tiles.every((v, i) => i === 8 ? v === 0 : v === i + 1);
+}
+function tryMove(v){
+  if(won) return;
+  const pos = tiles.indexOf(v), e = tiles.indexOf(0);
+  const pr = Math.floor(pos/3), pc = pos%3, er = Math.floor(e/3), ec = e%3;
+  if(Math.abs(pr-er) + Math.abs(pc-ec) !== 1) return;
+  tiles[e] = v; tiles[pos] = 0;
+  moves++; moveEl.textContent = moves;
+  placeTiles();
+  if(isSolved()) celebrate();
+}
+function shuffle(n = 260){
+  won = false; winEl.classList.remove('show');
+  tiles = [1,2,3,4,5,6,7,8,0];
+  for(let k = 0; k < n; k++){
+    const e = tiles.indexOf(0), er = Math.floor(e/3), ec = e%3;
+    const opts = [];
+    if(er > 0) opts.push(e-3); if(er < 2) opts.push(e+3);
+    if(ec > 0) opts.push(e-1); if(ec < 2) opts.push(e+1);
+    const p = opts[Math.floor(Math.random()*opts.length)];
+    tiles[e] = tiles[p]; tiles[p] = 0;
+  }
+  moves = 0; moveEl.textContent = 0;
+  placeTiles();
+}
+function celebrate(){
+  won = true;
+  winEl.classList.add('show');
+  const r = board.getBoundingClientRect();
+  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  for(let k = 0; k < 26; k++){
+    const s = document.createElement('div');
+    s.className = 'spark';
+    s.textContent = ['⭐','✨','🌟','💛'][k % 4];
+    s.style.left = cx + 'px'; s.style.top = cy + 'px';
+    s.style.setProperty('--dx', (Math.random()*360 - 180) + 'px');
+    s.style.setProperty('--dy', (Math.random()*360 - 180) + 'px');
+    s.style.animationDelay = (Math.random()*.4) + 's';
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 2000);
+  }
+  toast('Головоломка решена! Ты чудо 🌙💛');
+}
+buildBoard(); shuffle();
+document.getElementById('shuffleBtn').addEventListener('click', () => shuffle());
+document.getElementById('newBtn').addEventListener('click', () => { shuffle(); toast('Новая игра началась 🔀'); });
+
+/* ════════ 11. ПОЯВЛЕНИЕ СЕКЦИЙ ПРИ СКРОЛЛЕ ════════ */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(en => { if(en.isIntersecting) en.target.classList.add('visible'); });
+}, {threshold: .12});
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+</script>
+</body>
+</html>
